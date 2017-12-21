@@ -306,7 +306,6 @@ to speed-up
 end
 
 to-report car-color
-  ; give all cars a blueish color, but still make them distinguishable
   report one-of [ blue cyan sky yellow] + 1.5 + random-float 1.0
 end
 
@@ -482,7 +481,7 @@ cars-going-east
 cars-going-east
 0
 50
-10.0
+15.0
 1
 1
 NIL
@@ -497,7 +496,7 @@ cars-going-west
 cars-going-west
 0
 50
-36.0
+17.0
 1
 1
 NIL
@@ -640,7 +639,7 @@ true
 true
 "" ""
 PENS
-"to East" 1.0 0 -16777216 true "" "plot mean [speed] of cars with [facing = \"east\"]"
+"to East" 1.0 0 -2674135 true "" "plot mean [speed] of cars with [facing = \"east\"]"
 "to West" 1.0 0 -7500403 true "" "plot mean [speed] of cars with [facing = \"west\"]"
 
 @#$#@#$#@

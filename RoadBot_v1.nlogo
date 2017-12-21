@@ -277,18 +277,6 @@ to move-forward                                    ; ############ MOVE FORWARD #
   forward speed
 end
 
-to change-to-any-lane
-  ; make the car to change to any lane (right or left)
-  ; reset the patience to max-patience after changing lane and speed up
-  ; see original example
-end
-
-to change-to-right-lane
-  ; make the car to change to left lane only when there's approaching obstacle/cone from the right side
-  ; reset the patience to max-patience after changing lane and speed up
-  ; see the original example
-end
-
 to slow-down
     set speed (speed - deceleration)
     if speed < 0 [ set speed 0.001 ]
@@ -306,13 +294,11 @@ to speed-up
 end
 
 to-report car-color
-  ; give all cars a blueish color, but still make them distinguishable
   report one-of [ blue cyan sky yellow] + 1.5 + random-float 1.0
 end
 
 to choose-new-lane ; turtle procedure
-  ; Choose a new lane among those with the minimum
-  ; distance to your current lane (i.e., your ycor).
+  ; Choose a new lane among the available on each direction
   ifelse (heading = 270) [set lanes lanes-to-west] [set lanes lanes-to-east]
   let other-lanes remove ycor lanes
   if not empty? other-lanes [
@@ -323,7 +309,8 @@ to choose-new-lane ; turtle procedure
   ]
 end
 
-to move-to-target-lane ; turtle procedure
+to move-to-target-lane
+  ; swiftly change lane
   let current-heading heading
   if (target-lane < ycor) and (current-heading < 180) [set heading 150]
   if (target-lane > ycor) and (current-heading < 180) [set heading 60]
@@ -482,7 +469,7 @@ cars-going-east
 cars-going-east
 0
 50
-10.0
+21.0
 1
 1
 NIL
@@ -497,7 +484,7 @@ cars-going-west
 cars-going-west
 0
 50
-36.0
+18.0
 1
 1
 NIL
@@ -625,10 +612,10 @@ PENS
 "to West" 1.0 0 -11033397 true "" "plot count cars with [facing = \"west\"] with [target-lane != ycor]"
 
 PLOT
-711
-393
-911
-543
+699
+381
+974
+531
 Car Speed
 NIL
 NIL
@@ -637,10 +624,11 @@ NIL
 0.0
 0.1
 true
-false
+true
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot mean [speed] of cars"
+"to East" 1.0 0 -2674135 true "" "plot mean [speed] of cars with [facing = \"east\"]"
+"to West" 1.0 0 -7500403 true "" "plot mean [speed] of cars with [facing = \"west\"]"
 
 @#$#@#$#@
 ## WHAT IS IT?
