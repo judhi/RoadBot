@@ -20,12 +20,15 @@ cars-own [
   patience      ; the driver's current level of patience
   obstacle   ; blocked by cone
   original-color
+  facing
 ]
 
 to setup
   clear-all
   set min-speed 0.07
   set number-of-lanes 4
+  set lanes-to-east [-1 -3]
+  set lanes-to-west [1 3]
   set cones-are-moving 0
   set-default-shape cars "car"
   draw-road
@@ -41,8 +44,9 @@ to go
     move-forward
   ]
   create-and-remove-cars
-  ask cars with [ patience <= 0 ] [change-to-any-lane]
-  ask cars with [ obstacle = 1 ] [change-to-right-lane]
+  ask cars with [ patience <= 0 ] [choose-new-lane]
+  ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
+  ;ask cars with [ obstacle = 1 ] [change-to-right-lane]
   tick
 end
 
@@ -160,11 +164,14 @@ to create-and-remove-cars
       if (min [ycor] of cones < -0.05) [ set start-car-at [-3] ]
       if (min [ycor] of cones > 1.8) [ set start-car-at [1 -1 -3] ]
       setxy min-pxcor one-of start-car-at
+      set lanes-to-east start-car-at
+      set target-lane pycor
       let this-car self
       if any? cars-here with [ self != this-car ] [die]
       set color car-color
       set original-color color
       set heading 90
+      set facing "east"
       set speed min-speed + random-float 0.05
       set top-speed speed + random-float 0.05
       set patience random max-patience
@@ -179,9 +186,14 @@ to create-and-remove-cars
       if (max [ycor] of cones <= 0.05) [ set start-car-at [1 3] ]
       if (max [ycor] of cones < -1.8) [ set start-car-at [-1 1 3] ]
       setxy max-pxcor one-of start-car-at
+      set lanes-to-west start-car-at
+      set target-lane pycor
+      let this-car self
+      if any? cars-here with [ self != this-car ] [die]
       set color car-color
       set original-color color
       set heading 270
+      set facing "west"
       set speed min-speed + random-float 0.05
       set top-speed speed + random-float 0.05
       set patience random max-patience
@@ -203,6 +215,7 @@ to create-or-remove-cars-going-east
     move-to one-of free road-patches-east
     set target-lane pycor
     set heading 90
+    set facing "east"
       set speed min-speed + random-float 0.05
       set top-speed speed + random-float 0.05
     set patience random max-patience
@@ -218,7 +231,8 @@ to create-or-remove-cars-going-west
   create-cars (cars-going-west - count cars with [ heading = 270 ]) [
     set shape one-of [ "car-l" "truck-l" ]
     ifelse (shape = "truck-l") [ set size 1 ] [ set size 0.9 ]
-    set heading -90
+    set heading 270
+    set facing "west"
     set color car-color
     set original-color color
     move-to one-of free road-patches-west
@@ -237,13 +251,14 @@ to-report free [ road-patches ] ; turtle procedure
   ]
 end
 
-to move-forward
+to move-forward                                    ; ############ MOVE FORWARD ####################
   ; check if there's any blocking car in front
   ; if so, slow-down, match the speed to the car in front
 
   ; check if there's any approaching obstacle (cones) in right front within 1 patch distance and angle 45 degree
   ; (use patch-right-and-ahead)
   ; if so, set obstacle = 1
+  ifelse facing = "east" [set heading 90] [set heading 270]
   if (xcor > max-pxcor) or (xcor < min-pxcor) [ die ] ; disapear at the end of screen
   ; check for other car
   let blocking-cars other cars in-cone (1 + speed) 180 with [ y-distance <= 2 ]
@@ -257,7 +272,6 @@ to move-forward
   ] [
     set obstacle 0
     set patience max-patience
-    set color original-color
     speed-up
   ]
   forward speed
@@ -279,10 +293,10 @@ to slow-down
     set speed (speed - deceleration)
     if speed < 0 [ set speed 0.001 ]
     set patience patience - 1
-    if patience < 0 [
+    ifelse patience < 0 [
       set color red
       set patience -1
-    ]
+    ] [ set color original-color ]
 end
 
 to speed-up
@@ -295,6 +309,31 @@ to-report car-color
   ; give all cars a blueish color, but still make them distinguishable
   report one-of [ blue cyan sky yellow] + 1.5 + random-float 1.0
 end
+
+to choose-new-lane ; turtle procedure
+  ; Choose a new lane among those with the minimum
+  ; distance to your current lane (i.e., your ycor).
+  ifelse (heading = 270) [set lanes lanes-to-west] [set lanes lanes-to-east]
+  let other-lanes remove ycor lanes
+  if not empty? other-lanes [
+    let min-dist min map [ y -> abs (y - ycor) ] other-lanes
+    let closest-lanes filter [ y -> abs (y - ycor) = min-dist ] other-lanes
+    set target-lane one-of closest-lanes
+    set patience max-patience
+  ]
+end
+
+to move-to-target-lane ; turtle procedure
+  let current-heading heading
+  if (target-lane < ycor) and (current-heading < 180) [set heading 150]
+  if (target-lane > ycor) and (current-heading < 180) [set heading 60]
+  if (target-lane < ycor) and (current-heading > 180) [set heading 230]
+  if (target-lane > ycor) and (current-heading > 180) [set heading 300]
+  forward 0.008
+end
+
+; *************************** buttons ***************
+
 
 to west-plus
   if cars-going-west < 50 [
@@ -364,7 +403,7 @@ max-patience
 max-patience
 0
 60
-13.0
+5.0
 1
 1
 NIL
@@ -379,7 +418,7 @@ deceleration
 deceleration
 0.01
 0.1
-0.04
+0.03
 0.01
 1
 NIL
@@ -394,7 +433,7 @@ acceleration
 acceleration
 0.001
 0.01
-0.01
+0.002
 0.001
 1
 NIL
@@ -443,7 +482,7 @@ cars-going-east
 cars-going-east
 0
 50
-9.0
+10.0
 1
 1
 NIL
@@ -458,7 +497,7 @@ cars-going-west
 cars-going-west
 0
 50
-39.0
+36.0
 1
 1
 NIL
@@ -546,6 +585,62 @@ NIL
 NIL
 NIL
 1
+
+PLOT
+13
+383
+344
+533
+Cars per Direction
+Time
+# cars
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"to East" 1.0 0 -955883 true "" "plot count cars with [facing = \"east\"]"
+"to West" 1.0 0 -11033397 true "" "plot count cars with [facing = \"west\"]"
+
+PLOT
+359
+383
+689
+533
+Cars Changing Lane
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"to East" 1.0 0 -955883 true "" "plot count cars with [facing = \"east\"] with [target-lane != ycor]"
+"to West" 1.0 0 -11033397 true "" "plot count cars with [facing = \"west\"] with [target-lane != ycor]"
+
+PLOT
+711
+393
+911
+543
+Car Speed
+NIL
+NIL
+10.0
+10.0
+0.0
+0.1
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot mean [speed] of cars"
 
 @#$#@#$#@
 ## WHAT IS IT?
