@@ -41,8 +41,8 @@ to go
     move-forward
   ]
   create-and-remove-cars
-  ask cars with [ patience <= 0 ] [change-to-any-lane]
-  ask cars with [ obstacle = 1 ] [change-to-right-lane]
+  ask cars with [ patience <= 0 ] [choose-new-lane move-to-target-lane]
+  ;ask cars with [ obstacle = 1 ] [change-to-right-lane]
   tick
 end
 
@@ -160,6 +160,8 @@ to create-and-remove-cars
       if (min [ycor] of cones < -0.05) [ set start-car-at [-3] ]
       if (min [ycor] of cones > 1.8) [ set start-car-at [1 -1 -3] ]
       setxy min-pxcor one-of start-car-at
+      set lanes-to-east start-car-at
+      print lanes-to-east
       let this-car self
       if any? cars-here with [ self != this-car ] [die]
       set color car-color
@@ -179,6 +181,8 @@ to create-and-remove-cars
       if (max [ycor] of cones <= 0.05) [ set start-car-at [1 3] ]
       if (max [ycor] of cones < -1.8) [ set start-car-at [-1 1 3] ]
       setxy max-pxcor one-of start-car-at
+      set lanes-to-west start-car-at
+      print lanes-to-west
       set color car-color
       set original-color color
       set heading 270
@@ -237,7 +241,7 @@ to-report free [ road-patches ] ; turtle procedure
   ]
 end
 
-to move-forward
+to move-forward                                    ; ############ MOVE FORWARD ####################
   ; check if there's any blocking car in front
   ; if so, slow-down, match the speed to the car in front
 
@@ -256,8 +260,8 @@ to move-forward
     slow-down
   ] [
     set obstacle 0
-    set patience max-patience
-    set color original-color
+    ;set patience max-patience
+    ;set color original-color
     speed-up
   ]
   forward speed
@@ -295,6 +299,36 @@ to-report car-color
   ; give all cars a blueish color, but still make them distinguishable
   report one-of [ blue cyan sky yellow] + 1.5 + random-float 1.0
 end
+
+to choose-new-lane ; turtle procedure
+  ; Choose a new lane among those with the minimum
+  ; distance to your current lane (i.e., your ycor).
+  ifelse (heading = 270) [set lanes lanes-to-west] [set lanes lanes-to-east]
+  print lanes
+  let other-lanes remove ycor lanes
+  if not empty? other-lanes [
+    let min-dist min map [ y -> abs (y - ycor) ] other-lanes
+    let closest-lanes filter [ y -> abs (y - ycor) = min-dist ] other-lanes
+    set target-lane one-of closest-lanes
+    set patience max-patience
+  ]
+end
+
+to move-to-target-lane ; turtle procedure
+  set heading ifelse-value (target-lane < ycor) [ 180 ] [ 0 ]
+  let blocking-cars other turtles in-cone (1 + abs (ycor - target-lane)) 180 with [ x-distance <= 1 ]
+  let blocking-car min-one-of blocking-cars [ distance myself ]
+  ifelse blocking-car = nobody [
+    forward 0.2
+    set ycor precision ycor 1 ; to avoid floating point errors
+  ] [
+    ; slow down if the car blocking us is behind, otherwise speed up
+    ifelse towards blocking-car <= 180 [ slow-down ] [ speed-up ]
+  ]
+end
+
+; *************************** buttons ***************
+
 
 to west-plus
   if cars-going-west < 50 [
@@ -364,7 +398,7 @@ max-patience
 max-patience
 0
 60
-13.0
+34.0
 1
 1
 NIL
