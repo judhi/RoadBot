@@ -134,7 +134,9 @@ to move-cones ; this is to move cone up or down the line
   facexy xcor target-divider-line
   let ycor1 precision ycor 3 ; to avoid floating point errors
   ifelse ( ycor1 != target-divider-line) [
-    set color orange
+    let flashing-colors [orange yellow]
+    let x ycor * 100 mod 2
+    set color item x flashing-colors
     forward 0.001
     set cones-are-moving 1
   ] [
@@ -235,11 +237,12 @@ to-report free [ road-patches ] ; turtle procedure
 end
 
 to pick-appearance
-  ifelse facing = "west" [
-    set shape one-of [ "car" "car top"]
-  ] [
-    set shape one-of [ "car" "car top"]
-  ]
+  set shape one-of [ "car" ]
+  ;ifelse facing = "west" [
+    ;set shape one-of [ "car" "butterfly" "bee" "bug"]
+  ;] [
+    ;set shape one-of [ "car" "butterfly" "bee" "bug"]
+  ;]
   ;ifelse (shape = "truck") or (shape = "truck-l") [ set size 1 ] [ set size 0.95 ]
   set color one-of [ blue cyan sky 57] + 1.5 + random-float 1.0
   set original-color color
@@ -281,7 +284,7 @@ to slow-down
     ifelse patience <= 0 [
       set color red
       set patience 0
-    ] [ set color original-color ]
+    ] [ set color original-color]
 end
 
 to speed-up
@@ -309,10 +312,13 @@ end
 to move-to-target-lane
   ; swiftly change lane
   let current-heading heading
-  if (target-lane < ycor)  [set ycor ycor - 0.01]
-  if (target-lane > ycor)  [set ycor ycor + 0.01]
-  ;if (target-lane < ycor) and (current-heading > 180) [set ycor ycor + 0.01]
-  ;if (target-lane > ycor) and (current-heading > 180) [set heading 300]
+  ;let target-patch patch-right-and-ahead 90 1
+  if (target-lane < ycor) and (not any? cars-on patch-at 0 -1) [set ycor ycor - 0.01]
+  if (target-lane > ycor) and (not any? cars-on patch-at 0 1)  [set ycor ycor + 0.01]
+  ;if (target-lane > ycor) and (current-heading <= 180) [ if (patch-left 90 1 != nobody ) [set ycor ycor + 0.01]]
+  ;if (target-lane < ycor) and (current-heading <= 180) [ if (patch-right 90 1 != nobody ) [set ycor ycor - 0.01]]
+  ;if (target-lane > ycor) and (current-heading > 180) [ if (patch-right-and-ahead 90 1 != nobody ) [set ycor ycor + 0.01]]
+  ;if (target-lane < ycor) and (current-heading > 180) [ if (patch-left-and-ahead 90 1 != nobody ) [set ycor ycor - 0.01]]
   forward 0.008
 end
 
@@ -387,7 +393,7 @@ max-patience
 max-patience
 0
 60
-24.0
+15.0
 1
 1
 NIL
@@ -734,6 +740,31 @@ arrow
 true
 0
 Polygon -7500403 true true 150 0 0 150 105 150 105 293 195 293 195 150 300 150
+
+bee
+true
+0
+Polygon -1184463 true false 152 149 77 163 67 195 67 211 74 234 85 252 100 264 116 276 134 286 151 300 167 285 182 278 206 260 220 242 226 218 226 195 222 166
+Polygon -16777216 true false 150 149 128 151 114 151 98 145 80 122 80 103 81 83 95 67 117 58 141 54 151 53 177 55 195 66 207 82 211 94 211 116 204 139 189 149 171 152
+Polygon -7500403 true true 151 54 119 59 96 60 81 50 78 39 87 25 103 18 115 23 121 13 150 1 180 14 189 23 197 17 210 19 222 30 222 44 212 57 192 58
+Polygon -16777216 true false 70 185 74 171 223 172 224 186
+Polygon -16777216 true false 67 211 71 226 224 226 225 211 67 211
+Polygon -16777216 true false 91 257 106 269 195 269 211 255
+Line -1 false 144 100 70 87
+Line -1 false 70 87 45 87
+Line -1 false 45 86 26 97
+Line -1 false 26 96 22 115
+Line -1 false 22 115 25 130
+Line -1 false 26 131 37 141
+Line -1 false 37 141 55 144
+Line -1 false 55 143 143 101
+Line -1 false 141 100 227 138
+Line -1 false 227 138 241 137
+Line -1 false 241 137 249 129
+Line -1 false 249 129 254 110
+Line -1 false 253 108 248 97
+Line -1 false 249 95 235 82
+Line -1 false 235 82 144 100
 
 box
 false
