@@ -134,7 +134,7 @@ to move-cones ; this is to move cone up or down the line
   let ycor1 precision ycor 3 ; to avoid floating point errors
   ifelse ( ycor1 != target-divider-line) [
     set color orange
-    forward 0.0005
+    forward 0.001
     set cones-are-moving 1
   ] [
     set color yellow
@@ -252,21 +252,17 @@ end
 
 to move-forward                                    ; ############ MOVE FORWARD ####################
   ; check if there's any blocking car in front
-  ; if so, slow-down, match the speed to the car in front
-
-  ; check if there's any approaching obstacle (cones) in right front within 1 patch distance and angle 45 degree
-  ; (use patch-right-and-ahead)
-  ; if so, set obstacle = 1
   ifelse facing = "east" [set heading 90] [set heading 270]
   if (xcor > max-pxcor) or (xcor < min-pxcor) [ die ] ; disapear at the end of screen
   ; check for other car
-  let blocking-cars other cars in-cone (1.2 + speed * 3) 180 with [ y-distance <= 2 ]
-  let blocking-car min-one-of blocking-cars [ distance myself ]
-  ifelse blocking-car != nobody [
+  let blocking-objects other turtles in-cone (1.2 + speed * 3) 180 with [ y-distance <= 2 ]
+  let blocking-object min-one-of blocking-objects [ distance myself ]
+  ifelse blocking-object != nobody [
     ; match the speed of the car ahead of you and then slow
     ; down so you are driving a bit slower than that car.
     set obstacle 1
-    set speed [ speed ] of blocking-car
+    if mblocking-object
+    set speed [ speed ] of blocking-object
     slow-down
   ] [
     set obstacle 0
@@ -468,7 +464,7 @@ cars-going-east
 cars-going-east
 0
 60
-23.0
+22.0
 1
 1
 NIL
@@ -483,7 +479,7 @@ cars-going-west
 cars-going-west
 0
 60
-25.0
+13.0
 1
 1
 NIL
