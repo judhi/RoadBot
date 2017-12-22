@@ -112,7 +112,8 @@ to draw-cones
       setxy xpos 0
       set size 0.7
       set color yellow
-      set shape "triangle"
+      set shape "cylinder"
+      set size 0.3
       set heading 180
       set xpos ( xpos + 1 )
     ]
@@ -235,11 +236,11 @@ end
 
 to pick-appearance
   ifelse facing = "west" [
-    set shape one-of [ "car-l" "truck-l" ]
+    set shape one-of [ "car" "car top"]
   ] [
-    set shape one-of [ "car" "truck" ]
+    set shape one-of [ "car" "car top"]
   ]
-  ifelse (shape = "truck") or (shape = "truck-l") [ set size 1 ] [ set size 0.95 ]
+  ;ifelse (shape = "truck") or (shape = "truck-l") [ set size 1 ] [ set size 0.95 ]
   set color one-of [ blue cyan sky 57] + 1.5 + random-float 1.0
   set original-color color
 end
@@ -255,14 +256,15 @@ to move-forward                                    ; ############ MOVE FORWARD #
   ifelse facing = "east" [set heading 90] [set heading 270]
   if (xcor > max-pxcor) or (xcor < min-pxcor) [ die ] ; disapear at the end of screen
   ; check for other car
-  let blocking-objects other turtles in-cone (1.2 + speed * 3) 180 with [ y-distance <= 2 ]
+  let blocking-objects other turtles in-cone (1.2 + speed * 3) 60 with [ y-distance <= 2 ]
   let blocking-object min-one-of blocking-objects [ distance myself ]
   ifelse blocking-object != nobody [
     ; match the speed of the car ahead of you and then slow
     ; down so you are driving a bit slower than that car.
     set obstacle 1
-    if mblocking-object
-    set speed [ speed ] of blocking-object
+    if member? blocking-object cars [
+      set speed [ speed ] of blocking-object
+    ]
     slow-down
   ] [
     set obstacle 0
@@ -307,10 +309,10 @@ end
 to move-to-target-lane
   ; swiftly change lane
   let current-heading heading
-  if (target-lane < ycor) and (current-heading < 180) [set heading 150]
-  if (target-lane > ycor) and (current-heading < 180) [set heading 60]
-  if (target-lane < ycor) and (current-heading > 180) [set heading 230]
-  if (target-lane > ycor) and (current-heading > 180) [set heading 300]
+  if (target-lane < ycor) and (not any turtle target-lane) [set ycor ycor - 0.01]
+  if (target-lane > ycor) and (empty? target-lane) [set ycor ycor + 0.01]
+  ;if (target-lane < ycor) and (current-heading > 180) [set ycor ycor + 0.01]
+  ;if (target-lane > ycor) and (current-heading > 180) [set heading 300]
   forward 0.008
 end
 
@@ -479,17 +481,17 @@ cars-going-west
 cars-going-west
 0
 60
-13.0
+24.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-836
-160
-869
-252
+835
+162
+868
+254
 pos
 pos
 -1
@@ -707,6 +709,27 @@ true
 0
 Polygon -7500403 true true 150 0 135 15 120 60 120 105 15 165 15 195 120 180 135 240 105 270 120 285 150 270 180 285 210 270 165 240 180 180 285 195 285 165 180 105 180 60 165 15
 
+ambulance
+false
+0
+Rectangle -7500403 true true 30 90 210 195
+Polygon -7500403 true true 296 190 296 150 259 134 244 104 210 105 210 190
+Rectangle -1 true false 195 60 195 105
+Polygon -16777216 true false 238 112 252 141 219 141 218 112
+Circle -16777216 true false 234 174 42
+Circle -16777216 true false 69 174 42
+Rectangle -1 true false 288 158 297 173
+Rectangle -1184463 true false 289 180 298 172
+Rectangle -2674135 true false 29 151 298 158
+Line -16777216 false 210 90 210 195
+Rectangle -16777216 true false 83 116 128 133
+Rectangle -16777216 true false 153 111 176 134
+Line -7500403 true 165 105 165 135
+Rectangle -7500403 true true 14 186 33 195
+Line -13345367 false 45 135 75 120
+Line -13345367 false 75 135 45 120
+Line -13345367 false 60 112 60 142
+
 arrow
 true
 0
@@ -752,6 +775,32 @@ Circle -16777216 true false 30 180 90
 Polygon -16777216 true false 162 80 132 78 134 135 209 135 194 105 189 96 180 89
 Circle -7500403 true true 47 195 58
 Circle -7500403 true true 195 195 58
+
+car side
+false
+0
+Polygon -7500403 true true 19 147 11 125 16 105 63 105 99 79 155 79 180 105 243 111 266 129 253 149
+Circle -16777216 true false 43 123 42
+Circle -16777216 true false 194 124 42
+Polygon -16777216 true false 101 87 73 108 171 108 151 87
+Line -8630108 false 121 82 120 108
+Polygon -1 true false 242 121 248 128 266 129 247 115
+Rectangle -16777216 true false 12 131 28 143
+
+car top
+true
+0
+Polygon -7500403 true true 151 8 119 10 98 25 86 48 82 225 90 270 105 289 150 294 195 291 210 270 219 225 214 47 201 24 181 11
+Polygon -16777216 true false 210 195 195 210 195 135 210 105
+Polygon -16777216 true false 105 255 120 270 180 270 195 255 195 225 105 225
+Polygon -16777216 true false 90 195 105 210 105 135 90 105
+Polygon -1 true false 205 29 180 30 181 11
+Line -7500403 false 210 165 195 165
+Line -7500403 false 90 165 105 165
+Polygon -16777216 true false 121 135 180 134 204 97 182 89 153 85 120 89 98 97
+Line -16777216 false 210 90 195 30
+Line -16777216 false 90 90 105 30
+Polygon -1 true false 95 29 120 30 119 11
 
 car-l
 false
