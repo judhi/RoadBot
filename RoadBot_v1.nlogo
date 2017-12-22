@@ -8,6 +8,8 @@ globals [
   lanes-to-west
   cones-are-moving
   min-speed
+  cars-heading-east
+  cars-heading-west
 ]
 
 breed [cones cone]
@@ -144,8 +146,8 @@ end
 
 ; **************** cars related codes *******************
 to create-and-remove-cars
-  let cars-heading-east cars with [heading = 90]
-  let cars-heading-west cars with [heading = 270]
+  set cars-heading-east cars with [heading = 90]
+  set cars-heading-west cars with [heading = 270]
   ;set
   if count cars-heading-east > cars-going-east [ ; remove excess car(s) heading east, if any
     let n count cars-heading-east - cars-going-east
@@ -158,8 +160,6 @@ to create-and-remove-cars
   if( count cars-heading-east < cars-going-east) and (random 2 = 1) [ ; create one car heading east, if needed
     create-cars 1 [
       let start-car-at [-1 -3]
-      set shape one-of [ "car" "truck" ]
-      ifelse (shape = "truck") [ set size 1 ] [ set size 0.9 ]
       if (min [ycor] of cones >= 0) [ set start-car-at [-1 -3] ]
       if (min [ycor] of cones < -0.05) [ set start-car-at [-3] ]
       if (min [ycor] of cones > 1.8) [ set start-car-at [1 -1 -3] ]
@@ -168,19 +168,14 @@ to create-and-remove-cars
       set target-lane pycor
       let this-car self
       if any? cars-here with [ self != this-car ] [die]
-      set color car-color
-      set original-color color
       set heading 90
       set facing "east"
-      set speed min-speed + random-float 0.05
-      set top-speed speed + random-float 0.05
-      set patience random max-patience
+      pick-appearance
+      init-speed
     ]
   ]
   if (count cars-heading-west < cars-going-west) and (random 2 = 1) [ ; create one car heading west, if needed
     create-cars 1 [
-      set shape one-of [ "car-l" "truck-l" ]
-      ifelse (shape = "truck") [ set size 1 ] [ set size 0.9 ]
       let start-car-at [1 3]
       if (max [ycor] of cones > 0.05) [ set start-car-at [3] ]
       if (max [ycor] of cones <= 0.05) [ set start-car-at [1 3] ]
@@ -190,13 +185,10 @@ to create-and-remove-cars
       set target-lane pycor
       let this-car self
       if any? cars-here with [ self != this-car ] [die]
-      set color car-color
-      set original-color color
       set heading 270
       set facing "west"
-      set speed min-speed + random-float 0.05
-      set top-speed speed + random-float 0.05
-      set patience random max-patience
+      pick-appearance
+      init-speed
     ]
   ]
 end
@@ -208,17 +200,12 @@ to create-or-remove-cars-going-east
     set cars-going-east count road-patches-east - 10
   ]
   create-cars (cars-going-east - count cars with [ heading = 90 ]) [
-    set shape one-of [ "car" "truck" ]
-    ifelse (shape = "truck") [ set size 1 ] [ set size 0.9 ]
-    set color car-color
-    set original-color color
     move-to one-of free road-patches-east
-    set target-lane pycor
     set heading 90
     set facing "east"
-      set speed min-speed + random-float 0.05
-      set top-speed speed + random-float 0.05
-    set patience random max-patience
+    pick-appearance
+    set target-lane pycor
+    init-speed
   ]
 end
 
@@ -229,17 +216,12 @@ to create-or-remove-cars-going-west
     set cars-going-west count road-patches-west
   ]
   create-cars (cars-going-west - count cars with [ heading = 270 ]) [
-    set shape one-of [ "car-l" "truck-l" ]
-    ifelse (shape = "truck-l") [ set size 1 ] [ set size 0.9 ]
+    move-to one-of free road-patches-west
     set heading 270
     set facing "west"
-    set color car-color
-    set original-color color
-    move-to one-of free road-patches-west
+    pick-appearance
     set target-lane pycor
-      set speed min-speed + random-float 0.05
-      set top-speed speed + random-float 0.05
-    set patience random max-patience
+    init-speed
   ]
 end
 
@@ -249,6 +231,23 @@ to-report free [ road-patches ] ; turtle procedure
   report road-patches with [
     not any? turtles-here with [ self != this-car ]
   ]
+end
+
+to pick-appearance
+  ifelse facing = "west" [
+    set shape one-of [ "car-l" "truck-l" ]
+  ] [
+    set shape one-of [ "car" "truck" ]
+  ]
+  ifelse (shape = "truck") or (shape = "truck-l") [ set size 1 ] [ set size 0.95 ]
+  set color one-of [ blue cyan sky 57] + 1.5 + random-float 1.0
+  set original-color color
+end
+
+to init-speed
+  set speed min-speed + random-float 0.05
+  set top-speed speed + random-float 0.03
+  set patience 1 + random max-patience
 end
 
 to move-forward                                    ; ############ MOVE FORWARD ####################
@@ -261,7 +260,7 @@ to move-forward                                    ; ############ MOVE FORWARD #
   ifelse facing = "east" [set heading 90] [set heading 270]
   if (xcor > max-pxcor) or (xcor < min-pxcor) [ die ] ; disapear at the end of screen
   ; check for other car
-  let blocking-cars other cars in-cone (1 + speed) 180 with [ y-distance <= 2 ]
+  let blocking-cars other cars in-cone (1.2 + speed * 3) 180 with [ y-distance <= 2 ]
   let blocking-car min-one-of blocking-cars [ distance myself ]
   ifelse blocking-car != nobody [
     ; match the speed of the car ahead of you and then slow
@@ -271,7 +270,7 @@ to move-forward                                    ; ############ MOVE FORWARD #
     slow-down
   ] [
     set obstacle 0
-    set patience max-patience
+    ;set patience max-patience
     speed-up
   ]
   forward speed
@@ -281,9 +280,9 @@ to slow-down
     set speed (speed - deceleration)
     if speed < 0 [ set speed 0.001 ]
     set patience patience - 1
-    ifelse patience < 0 [
+    ifelse patience <= 0 [
       set color red
-      set patience -1
+      set patience 0
     ] [ set color original-color ]
 end
 
@@ -294,7 +293,7 @@ to speed-up
 end
 
 to-report car-color
-  report one-of [ blue cyan sky yellow] + 1.5 + random-float 1.0
+  report one-of [ blue cyan sky 57] + 1.5 + random-float 1.0
 end
 
 to choose-new-lane ; turtle procedure
@@ -382,40 +381,40 @@ ticks
 30.0
 
 SLIDER
-835
-29
-976
-62
+837
+260
+978
+293
 max-patience
 max-patience
 0
 60
-5.0
+24.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-835
-62
-975
-95
+836
+298
+976
+331
 deceleration
 deceleration
 0.01
 0.1
-0.03
+0.02
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-835
-95
-974
-128
+837
+339
+976
+372
 acceleration
 acceleration
 0.001
@@ -461,30 +460,30 @@ NIL
 1
 
 SLIDER
-836
-253
-975
-286
+695
+383
+830
+416
 cars-going-east
 cars-going-east
 0
-50
-21.0
+60
+23.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-836
-127
-975
-160
+835
+383
+973
+416
 cars-going-west
 cars-going-west
 0
-50
-18.0
+60
+25.0
 1
 1
 NIL
@@ -506,10 +505,10 @@ NIL
 VERTICAL
 
 BUTTON
-840
-297
-895
-330
+914
+419
+969
+452
 West +
 west-plus
 NIL
@@ -523,10 +522,10 @@ NIL
 1
 
 BUTTON
-841
-332
-896
-365
+838
+419
+893
+452
 West -
 West-minus
 NIL
@@ -540,10 +539,10 @@ NIL
 1
 
 BUTTON
-901
-297
-960
-330
+766
+418
+825
+451
 East +
 East-plus
 NIL
@@ -557,10 +556,10 @@ NIL
 1
 
 BUTTON
-901
-333
-960
-366
+697
+418
+756
+451
 East -
 East-minus
 NIL
@@ -577,7 +576,7 @@ PLOT
 13
 383
 344
-533
+553
 Cars per Direction
 Time
 # cars
@@ -596,7 +595,7 @@ PLOT
 359
 383
 689
-533
+551
 Cars Changing Lane
 NIL
 NIL
@@ -611,24 +610,59 @@ PENS
 "to East" 1.0 0 -955883 true "" "plot count cars with [facing = \"east\"] with [target-lane != ycor]"
 "to West" 1.0 0 -11033397 true "" "plot count cars with [facing = \"west\"] with [target-lane != ycor]"
 
-PLOT
-699
-381
-974
-531
-Car Speed
-NIL
-NIL
-10.0
-10.0
+MONITOR
+697
+501
+828
+550
+Cars Blocked (E)
+count cars-heading-east with [obstacle = 1]
+0
+1
+12
+
+MONITOR
+838
+499
+972
+548
+Cars Blocked (W)
+count cars with [obstacle = 1] with [facing = \"west\"]
+0
+1
+12
+
+MONITOR
+697
+455
+829
+500
+Avg Speed (to East)
+mean [speed] of cars with [facing = \"east\"]
+3
+1
+11
+
+MONITOR
+837
+455
+972
+500
+Avg Speed (to West)
+mean [speed] of cars with [facing = \"west\"]
+3
+1
+11
+
+TEXTBOX
+846
+52
+973
+124
+RoadBot Simulator
+26
 0.0
-0.1
-true
-true
-"" ""
-PENS
-"to East" 1.0 0 -2674135 true "" "plot mean [speed] of cars with [facing = \"east\"]"
-"to West" 1.0 0 -7500403 true "" "plot mean [speed] of cars with [facing = \"west\"]"
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
