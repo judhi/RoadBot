@@ -9,8 +9,11 @@ globals [
   cones-are-moving
   base-speed
   min-speed
+  speed-variation
   cars-heading-east
   cars-heading-west
+  smooth-avg-east
+  smooth-avg-west
 ]
 
 breed [cones cone]
@@ -29,8 +32,9 @@ cars-own [
 
 to setup
   clear-all
-  set base-speed 0.07
+  set base-speed 0.1
   set min-speed 0.001
+  set speed-variation 0.3
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
   set lanes-to-west [1 3]
@@ -50,7 +54,7 @@ to go
   ]
   create-and-remove-cars
   ask cars with [ patience <= 0 ] [choose-new-lane]
-  ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
+  ;ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
   ;ask cars with [ obstacle = 1 ] [change-to-right-lane]
   tick
 end
@@ -172,10 +176,9 @@ to create-and-remove-cars
       setxy min-pxcor one-of start-car-at
       set lanes-to-east start-car-at
       set target-lane pycor
-      set size 1.2
       let this-car self
-      if any? cars-here with [ self != this-car ] [die] ; !!!!!!!!!!! must modify this
-      let size 0.8
+      ;if any? cars-here with [ self != this-car ] [die] ; !!!!!!!!!!! must modify this
+      if sum [count cars-here] of neighbors > 0 and (any? cars-here with [ self != this-car]) [die]
       set heading 90
       set facing "east"
       pick-appearance
@@ -192,7 +195,8 @@ to create-and-remove-cars
       set lanes-to-west start-car-at
       set target-lane pycor
       let this-car self
-      if any? cars-here with [ self != this-car ] [die]
+      ;if any? cars-here with [ self != this-car ] [die]
+      if sum [count cars-here] of neighbors > 0 and (any? cars-here with [ self != this-car]) [die]
       set heading 270
       set facing "west"
       pick-appearance
@@ -255,7 +259,7 @@ to pick-appearance
 end
 
 to init-speed
-  set top-speed base-speed + random-float 0.02
+  set top-speed base-speed + random-float (speed-variation * base-speed)
   set speed top-speed
   set patience max-patience
 end
@@ -265,7 +269,9 @@ to move-forward                                    ; ############ MOVE FORWARD #
   ifelse facing = "east" [set heading 90] [set heading 270]
   if (xcor > max-pxcor) or (xcor < min-pxcor) [ die ] ; disapear at the end of screen
   ; check for other car
-  let blocking-objects other turtles in-cone (1.5 + speed * 3) 60 with [ y-distance <= 2 ]
+  ;ask patches in-cone (1.5 + speed * 3) 60 with [ y-distance <= 2 ] ; Eliseo: I was trying to visualize the cone of view of the cars, but doesn't work
+  ;    [ set pcolor red ]
+  let blocking-objects other turtles in-cone (0.5 + speed * 3) 60 with [ y-distance <= 2 ]
   let blocking-object min-one-of blocking-objects [ distance myself ]
   ifelse blocking-object != nobody [
     ; match the speed of the car ahead of you and then slow
@@ -274,7 +280,7 @@ to move-forward                                    ; ############ MOVE FORWARD #
     if member? blocking-object cars [
       set speed [ speed ] of blocking-object
     ]
-    ;slow-down
+    slow-down
   ] [
     set obstacle 0
     ;set patience max-patience
@@ -422,7 +428,7 @@ deceleration
 deceleration
 0.01
 0.1
-0.02
+0.05
 0.01
 1
 NIL
@@ -437,7 +443,7 @@ acceleration
 acceleration
 0.001
 0.01
-0.002
+0.006
 0.001
 1
 NIL
@@ -485,8 +491,8 @@ SLIDER
 cars-going-east
 cars-going-east
 0
-100
-26.0
+150
+99.0
 1
 1
 NIL
@@ -501,7 +507,7 @@ cars-going-west
 cars-going-west
 0
 100
-59.0
+23.0
 1
 1
 NIL
@@ -599,15 +605,15 @@ Cars per Direction
 Time
 # cars
 0.0
-10.0
+1.0
 0.0
 10.0
 true
 true
-"" ""
+"" "set-plot-x-range (plot-x-max - 500) (plot-x-max + 1)"
 PENS
-"to East" 1.0 0 -955883 true "" "plot count cars with [facing = \"east\"]"
-"to West" 1.0 0 -11033397 true "" "plot count cars with [facing = \"west\"]"
+"to East" 1.0 0 -955883 true "" "plot (count cars with [facing = \"east\"])"
+"to West" 1.0 0 -11033397 true "" "plot (count cars with [facing = \"west\"])"
 
 PLOT
 359
@@ -619,16 +625,14 @@ NIL
 NIL
 0.0
 1.0
-0.0
+0.08
 0.12
+false
 true
-true
-"" ""
+"" "set-plot-x-range (plot-x-max - 500) (plot-x-max + 1)\n"
 PENS
-"to East" 1.0 0 -955883 true "" "plot mean [speed] of cars with [facing = \"east\"]"
-"to West" 1.0 0 -11033397 true "" "plot mean [speed] of cars with [facing = \"west\"]"
-"pen-2" 1.0 0 -7500403 true "" "plot mean [speed] of cars with [facing = \"east\"]"
-"pen-3" 1.0 0 -2674135 true "plot mean [speed] of cars with [facing = \"west\"]" ""
+"to East" 1.0 0 -955883 true "" "; Smooth = alpha speed + (1 - alpha ) smooth\nlet alpha 0.5\nlet s mean [speed] of cars with [facing = \"east\"]\nset smooth-avg-east (alpha * s + (1 - alpha ) * smooth-avg-east)\nplot smooth-avg-east"
+"to West" 1.0 0 -11033397 true "" "let alpha 0.5\nlet s mean [speed] of cars with [facing = \"west\"]\nset smooth-avg-west (alpha * s + (1 - alpha ) * smooth-avg-west)\nplot smooth-avg-west"
 
 MONITOR
 697

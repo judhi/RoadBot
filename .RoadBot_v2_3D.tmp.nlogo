@@ -9,9 +9,11 @@ globals [
   cones-are-moving
   base-speed
   min-speed
-  variation-speed
+  speed-variation
   cars-heading-east
   cars-heading-west
+  smooth-avg-east
+  smooth-avg-west
 ]
 
 breed [cones cone]
@@ -30,9 +32,9 @@ cars-own [
 
 to setup
   clear-all
-  set base-speed 0.5a
+  set base-speed 0.1
   set min-speed 0.001
-  set variation-speed 0.1
+  set speed-variation 0.5
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
   set lanes-to-west [1 3]
@@ -52,7 +54,7 @@ to go
   ]
   create-and-remove-cars
   ask cars with [ patience <= 0 ] [choose-new-lane]
-  ;ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
+  ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
   ;ask cars with [ obstacle = 1 ] [change-to-right-lane]
   tick
 end
@@ -257,7 +259,7 @@ to pick-appearance
 end
 
 to init-speed
-  set top-speed base-speed + random-float (variation-speed * base-speed)
+  set top-speed base-speed + random-float (speed-variation * base-speed)
   set speed top-speed
   set patience max-patience
 end
@@ -490,7 +492,7 @@ cars-going-east
 cars-going-east
 0
 150
-150.0
+99.0
 1
 1
 NIL
@@ -505,7 +507,7 @@ cars-going-west
 cars-going-west
 0
 100
-21.0
+23.0
 1
 1
 NIL
@@ -603,15 +605,15 @@ Cars per Direction
 Time
 # cars
 0.0
-10.0
+1.0
 0.0
 10.0
 true
 true
-"" ""
+"" "set-plot-x-range (plot-x-max - 500) (plot-x-max + 1)"
 PENS
-"to East" 1.0 0 -955883 true "" "plot count cars with [facing = \"east\"]"
-"to West" 1.0 0 -11033397 true "" "plot count cars with [facing = \"west\"]"
+"to East" 1.0 0 -955883 true "" "plot (count cars with [facing = \"east\"])"
+"to West" 1.0 0 -11033397 true "" "plot (count cars with [facing = \"west\"])"
 
 PLOT
 359
@@ -623,14 +625,14 @@ NIL
 NIL
 0.0
 1.0
-0.0
-0.12
+0.07
+0.13
+false
 true
-true
-"" ""
+"" "set-plot-x-range (plot-x-max - 500) (plot-x-max + 1)\n"
 PENS
-"to East" 1.0 0 -955883 true "" "plot mean [speed] of cars with [facing = \"east\"]"
-"to West" 1.0 0 -11033397 true "" "plot mean [speed] of cars with [facing = \"west\"]"
+"to East" 1.0 0 -955883 true "" "; Smooth = alpha speed + (1 - alpha ) smooth\nlet alpha 0.7\nlet s mean [speed] of cars with [facing = \"east\"]\nset smooth-avg-east (alpha * s + (1 - alpha ) * smooth-avg-east)\nplot smooth-avg-east\n;plot s"
+"to West" 1.0 0 -11033397 true "" "let alpha 0.7\nlet s mean [speed] of cars with [facing = \"west\"]\nset smooth-avg-west (alpha * s + (1 - alpha ) * smooth-avg-west)\nplot smooth-avg-west\n;plot s"
 
 MONITOR
 697
