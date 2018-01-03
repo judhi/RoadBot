@@ -53,7 +53,7 @@ to go
     move-forward
   ]
   create-and-remove-cars
-  ask cars with [ patience <= 0 ] [choose-new-lane]
+  ;ask cars with [ patience <= 0 ] [choose-new-lane]
   ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
   tick
 end
