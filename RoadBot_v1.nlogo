@@ -27,7 +27,7 @@ cars-own [
 
 to setup
   clear-all
-  set min-speed 0.07
+  set min-speed 0.01
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
   set lanes-to-west [1 3]
@@ -399,9 +399,9 @@ SLIDER
 331
 deceleration
 deceleration
-0.01
+0.005
 0.1
-0.02
+0.1
 0.01
 1
 NIL
@@ -464,7 +464,7 @@ SLIDER
 cars-going-east
 cars-going-east
 0
-60
+100
 22.0
 1
 1
@@ -479,8 +479,8 @@ SLIDER
 cars-going-west
 cars-going-west
 0
-60
-13.0
+100
+89.0
 1
 1
 NIL
@@ -660,6 +660,25 @@ RoadBot Simulator
 26
 0.0
 1
+
+PLOT
+1035
+54
+1235
+204
+Average Cars Speed
+NIL
+NIL
+0.0
+25.0
+0.0
+0.15
+true
+true
+"" ""
+PENS
+"to East" 1.0 0 -2674135 true "" "plot mean [speed] of cars with [facing = \"east\"]"
+"to West" 1.0 0 -11221820 true "" "plot mean [speed] of cars with [facing = \"west\"]"
 
 @#$#@#$#@
 ## WHAT IS IT?

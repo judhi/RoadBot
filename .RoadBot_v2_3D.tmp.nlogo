@@ -7,7 +7,9 @@ globals [
   lanes-to-east
   lanes-to-west
   cones-are-moving
+  base-speed
   min-speed
+  variation-speed
   cars-heading-east
   cars-heading-west
 ]
@@ -20,6 +22,7 @@ cars-own [
   top-speed     ; the maximum speed of the car (different for all cars)
   target-lane   ; the desired lane of the car
   patience      ; the driver's current level of patience
+  ;car-max-patience
   obstacle   ; blocked by cone
   original-color
   facing
@@ -27,7 +30,9 @@ cars-own [
 
 to setup
   clear-all
-  set min-speed 0.07
+  set base-speed 0.5a
+  set min-speed 0.001
+  set variation-speed 0.1
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
   set lanes-to-west [1 3]
@@ -47,7 +52,7 @@ to go
   ]
   create-and-remove-cars
   ask cars with [ patience <= 0 ] [choose-new-lane]
-  ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
+  ;ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
   ;ask cars with [ obstacle = 1 ] [change-to-right-lane]
   tick
 end
@@ -151,7 +156,7 @@ end
 to create-and-remove-cars
   set cars-heading-east cars with [heading = 90]
   set cars-heading-west cars with [heading = 270]
-  ;set
+
   if count cars-heading-east > cars-going-east [ ; remove excess car(s) heading east, if any
     let n count cars-heading-east - cars-going-east
     ask n-of n cars-heading-east [ die ]
@@ -170,7 +175,8 @@ to create-and-remove-cars
       set lanes-to-east start-car-at
       set target-lane pycor
       let this-car self
-      if any? cars-here with [ self != this-car ] [die]
+      ;if any? cars-here with [ self != this-car ] [die] ; !!!!!!!!!!! must modify this
+      if sum [count cars-here] of neighbors > 0 and (any? cars-here with [ self != this-car]) [die]
       set heading 90
       set facing "east"
       pick-appearance
@@ -187,7 +193,8 @@ to create-and-remove-cars
       set lanes-to-west start-car-at
       set target-lane pycor
       let this-car self
-      if any? cars-here with [ self != this-car ] [die]
+      ;if any? cars-here with [ self != this-car ] [die]
+      if sum [count cars-here] of neighbors > 0 and (any? cars-here with [ self != this-car]) [die]
       set heading 270
       set facing "west"
       pick-appearance
@@ -196,7 +203,7 @@ to create-and-remove-cars
   ]
 end
 
-to create-or-remove-cars-going-east
+to create-or-remove-cars-going-east ; executed at the beginning
   ; create cars
   let road-patches-east patches with [ member? pycor [-1 -3] ]
   if cars-going-east > count road-patches-east [
@@ -212,7 +219,7 @@ to create-or-remove-cars-going-east
   ]
 end
 
-to create-or-remove-cars-going-west
+to create-or-remove-cars-going-west ; executed at the beginning
   ; create cars
   let road-patches-west patches with [ member? pycor [1 3] ]
   if cars-going-west > count road-patches-west [
@@ -244,14 +251,15 @@ to pick-appearance
     ;set shape one-of [ "car" "butterfly" "bee" "bug"]
   ;]
   ;ifelse (shape = "truck") or (shape = "truck-l") [ set size 1 ] [ set size 0.95 ]
+  set size 0.8
   set color one-of [ blue cyan sky 57] + 1.5 + random-float 1.0
   set original-color color
 end
 
 to init-speed
-  set speed min-speed + random-float 0.05
-  set top-speed speed
-  set patience 1 + random max-patience
+  set top-speed base-speed + random-float (variation-speed * base-speed)
+  set speed top-speed
+  set patience max-patience
 end
 
 to move-forward                                    ; ############ MOVE FORWARD ####################
@@ -259,7 +267,9 @@ to move-forward                                    ; ############ MOVE FORWARD #
   ifelse facing = "east" [set heading 90] [set heading 270]
   if (xcor > max-pxcor) or (xcor < min-pxcor) [ die ] ; disapear at the end of screen
   ; check for other car
-  let blocking-objects other turtles in-cone (1.2 + speed * 3) 60 with [ y-distance <= 2 ]
+  ;ask patches in-cone (1.5 + speed * 3) 60 with [ y-distance <= 2 ] ; Eliseo: I was trying to visualize the cone of view of the cars, but doesn't work
+  ;    [ set pcolor red ]
+  let blocking-objects other turtles in-cone (0.5 + speed * 3) 60 with [ y-distance <= 2 ]
   let blocking-object min-one-of blocking-objects [ distance myself ]
   ifelse blocking-object != nobody [
     ; match the speed of the car ahead of you and then slow
@@ -279,7 +289,7 @@ end
 
 to slow-down
     set speed (speed - deceleration)
-    if speed < 0 [ set speed 0.001 ]
+    if speed < 0 [ set speed min-speed ]
     set patience patience - 1
     ifelse patience <= 0 [
       set color red
@@ -416,7 +426,7 @@ deceleration
 deceleration
 0.01
 0.1
-0.02
+0.05
 0.01
 1
 NIL
@@ -431,7 +441,7 @@ acceleration
 acceleration
 0.001
 0.01
-0.002
+0.006
 0.001
 1
 NIL
@@ -479,8 +489,8 @@ SLIDER
 cars-going-east
 cars-going-east
 0
-100
-26.0
+150
+150.0
 1
 1
 NIL
@@ -495,7 +505,7 @@ cars-going-west
 cars-going-west
 0
 100
-66.0
+21.0
 1
 1
 NIL

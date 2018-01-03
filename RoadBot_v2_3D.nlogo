@@ -7,6 +7,7 @@ globals [
   lanes-to-east
   lanes-to-west
   cones-are-moving
+  base-speed
   min-speed
   cars-heading-east
   cars-heading-west
@@ -20,6 +21,7 @@ cars-own [
   top-speed     ; the maximum speed of the car (different for all cars)
   target-lane   ; the desired lane of the car
   patience      ; the driver's current level of patience
+  ;car-max-patience
   obstacle   ; blocked by cone
   original-color
   facing
@@ -27,7 +29,8 @@ cars-own [
 
 to setup
   clear-all
-  set min-speed 0.07
+  set base-speed 0.07
+  set min-speed 0.001
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
   set lanes-to-west [1 3]
@@ -151,7 +154,7 @@ end
 to create-and-remove-cars
   set cars-heading-east cars with [heading = 90]
   set cars-heading-west cars with [heading = 270]
-  ;set
+
   if count cars-heading-east > cars-going-east [ ; remove excess car(s) heading east, if any
     let n count cars-heading-east - cars-going-east
     ask n-of n cars-heading-east [ die ]
@@ -169,8 +172,10 @@ to create-and-remove-cars
       setxy min-pxcor one-of start-car-at
       set lanes-to-east start-car-at
       set target-lane pycor
+      set size 1.2
       let this-car self
-      if any? cars-here with [ self != this-car ] [die]
+      if any? cars-here with [ self != this-car ] [die] ; !!!!!!!!!!! must modify this
+      let size 0.8
       set heading 90
       set facing "east"
       pick-appearance
@@ -196,7 +201,7 @@ to create-and-remove-cars
   ]
 end
 
-to create-or-remove-cars-going-east
+to create-or-remove-cars-going-east ; executed at the beginning
   ; create cars
   let road-patches-east patches with [ member? pycor [-1 -3] ]
   if cars-going-east > count road-patches-east [
@@ -212,7 +217,7 @@ to create-or-remove-cars-going-east
   ]
 end
 
-to create-or-remove-cars-going-west
+to create-or-remove-cars-going-west ; executed at the beginning
   ; create cars
   let road-patches-west patches with [ member? pycor [1 3] ]
   if cars-going-west > count road-patches-west [
@@ -244,14 +249,15 @@ to pick-appearance
     ;set shape one-of [ "car" "butterfly" "bee" "bug"]
   ;]
   ;ifelse (shape = "truck") or (shape = "truck-l") [ set size 1 ] [ set size 0.95 ]
+  set size 0.8
   set color one-of [ blue cyan sky 57] + 1.5 + random-float 1.0
   set original-color color
 end
 
 to init-speed
-  set speed min-speed + random-float 0.05
-  set top-speed speed
-  set patience 1 + random max-patience
+  set top-speed base-speed + random-float 0.02
+  set speed top-speed
+  set patience max-patience
 end
 
 to move-forward                                    ; ############ MOVE FORWARD ####################
@@ -259,7 +265,7 @@ to move-forward                                    ; ############ MOVE FORWARD #
   ifelse facing = "east" [set heading 90] [set heading 270]
   if (xcor > max-pxcor) or (xcor < min-pxcor) [ die ] ; disapear at the end of screen
   ; check for other car
-  let blocking-objects other turtles in-cone (1.2 + speed * 3) 60 with [ y-distance <= 2 ]
+  let blocking-objects other turtles in-cone (1.5 + speed * 3) 60 with [ y-distance <= 2 ]
   let blocking-object min-one-of blocking-objects [ distance myself ]
   ifelse blocking-object != nobody [
     ; match the speed of the car ahead of you and then slow
@@ -268,7 +274,7 @@ to move-forward                                    ; ############ MOVE FORWARD #
     if member? blocking-object cars [
       set speed [ speed ] of blocking-object
     ]
-    slow-down
+    ;slow-down
   ] [
     set obstacle 0
     ;set patience max-patience
@@ -279,7 +285,7 @@ end
 
 to slow-down
     set speed (speed - deceleration)
-    if speed < 0 [ set speed 0.001 ]
+    if speed < 0 [ set speed min-speed ]
     set patience patience - 1
     ifelse patience <= 0 [
       set color red
@@ -495,7 +501,7 @@ cars-going-west
 cars-going-west
 0
 100
-66.0
+59.0
 1
 1
 NIL
@@ -621,6 +627,8 @@ true
 PENS
 "to East" 1.0 0 -955883 true "" "plot mean [speed] of cars with [facing = \"east\"]"
 "to West" 1.0 0 -11033397 true "" "plot mean [speed] of cars with [facing = \"west\"]"
+"pen-2" 1.0 0 -7500403 true "" "plot mean [speed] of cars with [facing = \"east\"]"
+"pen-3" 1.0 0 -2674135 true "plot mean [speed] of cars with [facing = \"west\"]" ""
 
 MONITOR
 697
