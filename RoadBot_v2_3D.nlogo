@@ -308,7 +308,7 @@ to-report car-color
   report one-of [ blue cyan sky 57] + 1.5 + random-float 1.0
 end
 
-to choose-new-lane ; turtle proceduren ----------- fine tune this so no change lane if other lanes are not empty using the code below
+to choose-new-lane ; ----------- fine tune this so no change lane if other lanes are not empty using the code below
   ; Choose a new lane among the available on each direction
   ifelse (heading = 270) [set lanes lanes-to-west] [set lanes lanes-to-east]
   let other-lanes remove ycor lanes
@@ -316,6 +316,7 @@ to choose-new-lane ; turtle proceduren ----------- fine tune this so no change l
     let min-dist min map [ y -> abs (y - ycor) ] other-lanes
     let closest-lanes filter [ y -> abs (y - ycor) = min-dist ] other-lanes
     set target-lane one-of closest-lanes
+    set label target-lane
     set patience max-patience
   ]
 end
