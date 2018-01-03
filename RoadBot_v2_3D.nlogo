@@ -34,7 +34,7 @@ to setup
   clear-all
   set base-speed 0.1
   set min-speed 0.001
-  set speed-variation 0.3
+  set speed-variation 0.5
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
   set lanes-to-west [1 3]
@@ -54,8 +54,7 @@ to go
   ]
   create-and-remove-cars
   ask cars with [ patience <= 0 ] [choose-new-lane]
-  ;ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
-  ;ask cars with [ obstacle = 1 ] [change-to-right-lane]
+  ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
   tick
 end
 
@@ -428,7 +427,7 @@ deceleration
 deceleration
 0.01
 0.1
-0.05
+0.03
 0.01
 1
 NIL
@@ -625,14 +624,14 @@ NIL
 NIL
 0.0
 1.0
-0.08
-0.12
+0.07
+0.13
 false
 true
 "" "set-plot-x-range (plot-x-max - 500) (plot-x-max + 1)\n"
 PENS
-"to East" 1.0 0 -955883 true "" "; Smooth = alpha speed + (1 - alpha ) smooth\nlet alpha 0.5\nlet s mean [speed] of cars with [facing = \"east\"]\nset smooth-avg-east (alpha * s + (1 - alpha ) * smooth-avg-east)\nplot smooth-avg-east"
-"to West" 1.0 0 -11033397 true "" "let alpha 0.5\nlet s mean [speed] of cars with [facing = \"west\"]\nset smooth-avg-west (alpha * s + (1 - alpha ) * smooth-avg-west)\nplot smooth-avg-west"
+"to East" 1.0 0 -955883 true "" "; Smooth = alpha speed + (1 - alpha ) smooth\nlet alpha 0.7\nlet s mean [speed] of cars with [facing = \"east\"]\nset smooth-avg-east (alpha * s + (1 - alpha ) * smooth-avg-east)\nplot smooth-avg-east\n;plot s"
+"to West" 1.0 0 -11033397 true "" "let alpha 0.7\nlet s mean [speed] of cars with [facing = \"west\"]\nset smooth-avg-west (alpha * s + (1 - alpha ) * smooth-avg-west)\nplot smooth-avg-west\n;plot s"
 
 MONITOR
 697
