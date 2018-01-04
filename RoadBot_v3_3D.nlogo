@@ -39,7 +39,7 @@ to setup
   set base-speed 0.1
   set min-speed 0.001
   set speed-variation 0.3
-  set base-speed-kmh 200
+  set base-speed-kmh 120
   set speed-conversion-factor base-speed-kmh / base-speed
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
@@ -60,8 +60,8 @@ to go
   ]
   create-and-remove-cars
   ask cars with [ patience <= 0 and xcor > min-pxcor + 2 and xcor < max-pxcor - 2] [choose-new-lane]
+  ;ask cars with [ patience <= 0 and xcor > min-pxcor + 2 and xcor < max-pxcor - 2] [change-lane]
   ask cars with [ ycor != target-lane and xcor > min-pxcor + 2 and xcor < max-pxcor - 2] [ move-to-target-lane ]
-  ;ask cars with [ obstacle = 1 ] [change-to-right-lane]
   tick
 end
 
@@ -173,7 +173,7 @@ to create-and-remove-cars
     let n count cars-heading-west - cars-going-west
     ask n-of n  cars-heading-west [ die ]
   ]
-  if( count cars-heading-east < cars-going-east) and (random 2 = 1) [ ; create one car heading east, if needed
+  if( count cars-heading-east < cars-going-east)  [ ; create one car heading east, if needed
     create-cars 1 [
       let start-car-at [-1 -3]
       if (min [ycor] of cones >= 0) [ set start-car-at [-1 -3] ]
@@ -191,7 +191,7 @@ to create-and-remove-cars
       init-speed
     ]
   ]
-  if (count cars-heading-west < cars-going-west) and (random 2 = 1) [ ; create one car heading west, if needed
+  if (count cars-heading-west < cars-going-west)  [ ; create one car heading west, if needed
     create-cars 1 [
       let start-car-at [1 3]
       if (max [ycor] of cones > 0.05) [ set start-car-at [3] ]
@@ -277,7 +277,7 @@ to move-forward                                    ; ############ MOVE FORWARD #
   ; check for other car
   ;ask patches in-cone (1.5 + speed * 3) 60 with [ y-distance <= 2 ] ; Eliseo: I was trying to visualize the cone of view of the cars, but doesn't work
   ;    [ set pcolor red ]
-  let blocking-objects other turtles in-cone (1 + speed * 3) 60 with [ y-distance <= 2 ]
+  let blocking-objects other turtles in-cone (1 + speed * 5) 60 with [ y-distance <= 2 ]
   let blocking-object min-one-of blocking-objects [ distance myself ]
   ifelse blocking-object != nobody [
     ; match the speed of the car ahead of you and then slow
@@ -294,9 +294,9 @@ to move-forward                                    ; ############ MOVE FORWARD #
     speed-up
   ]
   ifelse facing = "east" [
-    if xcor > max-pxcor - 0.065 and random 2 = 1[ slow-down ]
+    if xcor > max-pxcor - (1 - (count cars with [ facing = "east" ] / cars-going-east))  and random 2 = 1 [ slow-down ]
   ] [
-    if xcor < min-pxcor + 0.065 and random 2 = 1 [ slow-down ]
+    if xcor < min-pxcor + (1 - (count cars with [ facing = "west" ] / cars-going-west)) and random 2 = 1 [ slow-down ]
   ]
   forward speed
 end
@@ -338,17 +338,22 @@ to choose-new-lane ; turtle proceduren ----------- fine tune this so no change l
   ]
 end
 
+to change-lane
+
+
+end
+
 to move-to-target-lane
   ; swiftly change lane
   let current-heading heading
   ifelse (target-lane < ycor) and (not any? cars-on patch-at 0 -1) and (not any? cars-on patch-ahead 1) [
-    set ycor ycor - 0.05
+    set ycor ycor - 0.025
      speed-up
      forward speed
 
   ][
     ifelse (target-lane > ycor) and (not any? cars-on patch-at 0 1) and (not any? cars-on patch-ahead 1) [
-      set ycor ycor + 0.05
+      set ycor ycor + 0.025
        speed-up
        forward speed
 
@@ -444,7 +449,7 @@ deceleration
 deceleration
 0.01
 0.1
-0.05
+0.04
 0.01
 1
 NIL
@@ -459,7 +464,7 @@ acceleration
 acceleration
 0.0001
 0.01
-4.0E-4
+0.0014
 0.0001
 1
 NIL
@@ -508,7 +513,7 @@ cars-going-east
 cars-going-east
 0
 200
-52.0
+195.0
 1
 1
 NIL
@@ -523,7 +528,7 @@ cars-going-west
 cars-going-west
 0
 200
-150.0
+55.0
 1
 1
 NIL
@@ -538,7 +543,7 @@ pos
 pos
 -1
 1
--1.0
+1.0
 1
 1
 NIL
