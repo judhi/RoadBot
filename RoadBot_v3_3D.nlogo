@@ -153,7 +153,7 @@ to move-cones ; this is to move cone up or down the line
     let flashing-colors [orange yellow]
     let x ycor * 100 mod 2
     set color item x flashing-colors
-    if (not any? cars-on patch xcor (ycor + 0.8) ) [
+    if (not any? cars-on patch xcor (ycor + 0.5) ) and ( abs ( ycor - mean [ycor] of cones ) < 0.3 ) [
       forward 0.001
     ]
     set cones-are-moving 1
@@ -389,11 +389,11 @@ end
 
 
 to detect-cone-position
-  set max-y-cone  max [ ycor ] of cones
-  set min-y-cone  min [ ycor ] of cones
+  set max-y-cone  mean [ ycor ] of cones
+  set min-y-cone  mean [ ycor ] of cones
   if (max-y-cone > 0.05) [ set lanes-to-west [3] ]
   if (max-y-cone <= 0.05) [ set lanes-to-west [1 3] ]
-  if (max-y-cone < -1.8) [ set lanes-to-west [-1 1 3] ]
+  if (max-y-cone <= -1.8) [ set lanes-to-west [-1 1 3] ]
   if (min-y-cone >= 0) [ set lanes-to-east [-1 -3] ]
   if (min-y-cone < -0.05) [ set lanes-to-east [-3] ]
   if (min-y-cone > 1.8) [ set lanes-to-east [1 -1 -3] ]
@@ -550,7 +550,7 @@ cars-going-east
 cars-going-east
 0
 200
-32.0
+40.0
 1
 1
 NIL
