@@ -36,10 +36,10 @@ cars-own [
 
 to setup
   clear-all
-  set base-speed 0.1
+  set base-speed 0.05
   set min-speed 0.001
-  set speed-variation 0.3
-  set base-speed-kmh 100
+  set speed-variation 0.5
+  set base-speed-kmh 60
   set speed-conversion-factor base-speed-kmh / base-speed
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
@@ -322,7 +322,8 @@ to choose-new-lane ; turtle proceduren ----------- fine tune this so no change l
   if not empty? other-lanes [
     let min-dist min map [ y -> abs (y - ycor) ] other-lanes
     let closest-lanes filter [ y -> abs (y - ycor) = min-dist ] other-lanes
-    set target-lane one-of closest-lanes
+    let temp-target-lane one-of closest-lanes
+    ;if (not any? cars-
     set patience max-patience
   ]
 end
@@ -419,7 +420,7 @@ max-patience
 max-patience
 0
 100
-15.0
+12.0
 1
 1
 NIL
@@ -434,7 +435,7 @@ deceleration
 deceleration
 0.01
 0.1
-0.08
+0.07
 0.01
 1
 NIL
@@ -443,14 +444,14 @@ HORIZONTAL
 SLIDER
 980
 420
-1119
+1120
 453
 acceleration
 acceleration
-0.001
+0.0001
 0.01
-0.004
-0.001
+4.0E-4
+0.0001
 1
 NIL
 HORIZONTAL
@@ -498,7 +499,7 @@ cars-going-east
 cars-going-east
 0
 200
-137.0
+187.0
 1
 1
 NIL
@@ -534,79 +535,11 @@ pos
 NIL
 VERTICAL
 
-BUTTON
-914
-419
-969
-452
-West +
-west-plus
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-838
-419
-893
-452
-West -
-West-minus
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-766
-418
-825
-451
-East +
-East-plus
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-697
-418
-756
-451
-East -
-East-minus
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 PLOT
 13
 383
 344
-553
+558
 Cars per Direction
 Time
 # cars
@@ -625,7 +558,7 @@ PLOT
 359
 383
 689
-551
+556
 Average speed (km/h)
 NIL
 NIL
@@ -642,9 +575,9 @@ PENS
 
 MONITOR
 697
-501
+505
 828
-550
+554
 Cars Blocked (E)
 count cars-heading-east with [obstacle = 1]
 0
@@ -653,9 +586,9 @@ count cars-heading-east with [obstacle = 1]
 
 MONITOR
 838
-499
+502
 972
-548
+551
 Cars Blocked (W)
 count cars with [obstacle = 1] with [facing = \"west\"]
 0
@@ -664,23 +597,23 @@ count cars with [obstacle = 1] with [facing = \"west\"]
 
 MONITOR
 697
-455
+459
 829
-500
+504
 Avg Speed (to East)
-mean [speed] of cars with [facing = \"east\"]
-3
+mean [speed] of cars with [facing = \"east\"]  * speed-conversion-factor
+0
 1
 11
 
 MONITOR
 837
-455
+458
 972
-500
+503
 Avg Speed (to West)
-mean [speed] of cars with [facing = \"west\"]
-3
+mean [speed] of cars with [facing = \"west\"]  * speed-conversion-factor
+0
 1
 11
 
@@ -693,6 +626,28 @@ RoadBot Simulator
 26
 0.0
 1
+
+MONITOR
+696
+416
+830
+461
+# cars (to East)
+count cars with [ facing = \"east\" ]
+0
+1
+11
+
+MONITOR
+837
+415
+972
+460
+# cars (to West)
+count cars with [ facing = \"west\" ]
+0
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
