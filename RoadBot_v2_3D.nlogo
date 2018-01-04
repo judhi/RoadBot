@@ -34,7 +34,7 @@ to setup
   clear-all
   set base-speed 0.1
   set min-speed 0.001
-  set speed-variation 0.5
+  set speed-variation 0.7
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
   set lanes-to-west [1 3]
@@ -53,7 +53,7 @@ to go
     move-forward
   ]
   create-and-remove-cars
-  ;ask cars with [ patience <= 0 ] [choose-new-lane]
+  ask cars with [ patience <= 0 ] [choose-new-lane]
   ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
   tick
 end
@@ -428,7 +428,7 @@ deceleration
 deceleration
 0.01
 0.1
-0.03
+0.06
 0.01
 1
 NIL
@@ -443,7 +443,7 @@ acceleration
 acceleration
 0.001
 0.01
-0.006
+0.003
 0.001
 1
 NIL
