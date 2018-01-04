@@ -36,10 +36,10 @@ cars-own [
 
 to setup
   clear-all
-  set base-speed 0.05
+  set base-speed 0.1
   set min-speed 0.001
-  set speed-variation 0.5
-  set base-speed-kmh 60
+  set speed-variation 0.3
+  set base-speed-kmh 200
   set speed-conversion-factor base-speed-kmh / base-speed
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
@@ -59,8 +59,8 @@ to go
     move-forward
   ]
   create-and-remove-cars
-  ask cars with [ patience <= 0 and xcor > min-pxcor + 3 and xcor < max-pxcor - 3] [choose-new-lane]
-  ;ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
+  ask cars with [ patience <= 0 and xcor > min-pxcor + 2 and xcor < max-pxcor - 2] [choose-new-lane]
+  ask cars with [ ycor != target-lane and xcor > min-pxcor + 2 and xcor < max-pxcor - 2] [ move-to-target-lane ]
   ;ask cars with [ obstacle = 1 ] [change-to-right-lane]
   tick
 end
@@ -150,7 +150,7 @@ to move-cones ; this is to move cone up or down the line
     let flashing-colors [orange yellow]
     let x ycor * 100 mod 2
     set color item x flashing-colors
-    forward 0.001
+    forward 0.0005
     set cones-are-moving 1
   ] [
     set color yellow
@@ -277,7 +277,7 @@ to move-forward                                    ; ############ MOVE FORWARD #
   ; check for other car
   ;ask patches in-cone (1.5 + speed * 3) 60 with [ y-distance <= 2 ] ; Eliseo: I was trying to visualize the cone of view of the cars, but doesn't work
   ;    [ set pcolor red ]
-  let blocking-objects other turtles in-cone (0.5 + speed * 3) 60 with [ y-distance <= 2 ]
+  let blocking-objects other turtles in-cone (1 + speed * 3) 60 with [ y-distance <= 2 ]
   let blocking-object min-one-of blocking-objects [ distance myself ]
   ifelse blocking-object != nobody [
     ; match the speed of the car ahead of you and then slow
@@ -285,12 +285,18 @@ to move-forward                                    ; ############ MOVE FORWARD #
     set obstacle 1
     if member? blocking-object cars [
       set speed [ speed ] of blocking-object
+      slow-down
     ]
     slow-down
   ] [
     set obstacle 0
     ;set patience max-patience
     speed-up
+  ]
+  ifelse facing = "east" [
+    if xcor > max-pxcor - 0.065 and random 2 = 1[ slow-down ]
+  ] [
+    if xcor < min-pxcor + 0.065 and random 2 = 1 [ slow-down ]
   ]
   forward speed
 end
@@ -300,7 +306,7 @@ to slow-down
     if speed < 0 [ set speed min-speed ]
     set patience patience - 1
     ifelse patience <= 0 [
-      set color red
+      ;set color red
       set patience 0
     ] [ set color original-color]
 end
@@ -323,28 +329,31 @@ to choose-new-lane ; turtle proceduren ----------- fine tune this so no change l
     let min-dist min map [ y -> abs (y - ycor) ] other-lanes
     let closest-lanes filter [ y -> abs (y - ycor) = min-dist ] other-lanes
     let temp-target-lane one-of closest-lanes
-    ;if (not any? cars-
-    set patience max-patience
+    ;set color red
+    if (not any? cars-on patch xcor temp-target-lane) and (not any? cars-on patch (xcor - 1) temp-target-lane) and (not any? cars-on patch (xcor + 1) temp-target-lane) and (not any? cars-on patch (xcor + 1.5) temp-target-lane) [
+      set target-lane temp-target-lane
+      set patience max-patience
+      set color original-color
+    ]
   ]
 end
 
 to move-to-target-lane
   ; swiftly change lane
   let current-heading heading
-  ifelse (target-lane < ycor) and (not any? cars-on patch-at 0 -1) [
-    set ycor ycor - 0.01
+  ifelse (target-lane < ycor) and (not any? cars-on patch-at 0 -1) and (not any? cars-on patch-ahead 1) [
+    set ycor ycor - 0.05
      speed-up
      forward speed
 
   ][
-    ifelse (target-lane > ycor) and (not any? cars-on patch-at 0 1) [
-      set ycor ycor + 0.01
+    ifelse (target-lane > ycor) and (not any? cars-on patch-at 0 1) and (not any? cars-on patch-ahead 1) [
+      set ycor ycor + 0.05
        speed-up
        forward speed
 
     ] [
-
-     forward 0.01
+     forward 0.001
     ]
   ]
 end
@@ -420,7 +429,7 @@ max-patience
 max-patience
 0
 100
-12.0
+2.0
 1
 1
 NIL
@@ -435,7 +444,7 @@ deceleration
 deceleration
 0.01
 0.1
-0.07
+0.05
 0.01
 1
 NIL
@@ -499,7 +508,7 @@ cars-going-east
 cars-going-east
 0
 200
-187.0
+52.0
 1
 1
 NIL
@@ -513,8 +522,8 @@ SLIDER
 cars-going-west
 cars-going-west
 0
-100
-19.0
+200
+150.0
 1
 1
 NIL
@@ -529,7 +538,7 @@ pos
 pos
 -1
 1
-0.0
+-1.0
 1
 1
 NIL
@@ -549,7 +558,7 @@ Time
 10.0
 true
 true
-"" "set-plot-x-range (plot-x-max - 500) (plot-x-max + 1)"
+"" "set-plot-x-range (plot-x-max - 3000) (plot-x-max + 1)"
 PENS
 "to East" 1.0 0 -955883 true "" "plot (count cars with [facing = \"east\"])"
 "to West" 1.0 0 -11033397 true "" "plot (count cars with [facing = \"west\"])"
