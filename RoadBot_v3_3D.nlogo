@@ -36,10 +36,10 @@ cars-own [
 
 to setup
   clear-all
-  set base-speed 0.03
+  set base-speed 0.1
   set min-speed 0.001
-  set speed-variation 1.5
-  set base-speed-kmh 60
+  set speed-variation 0.3
+  set base-speed-kmh 100
   set speed-conversion-factor base-speed-kmh / base-speed
   set number-of-lanes 4
   set lanes-to-east [-1 -3]
@@ -59,8 +59,8 @@ to go
     move-forward
   ]
   create-and-remove-cars
-  ask cars with [ patience <= 0 ] [choose-new-lane]
-  ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
+  ask cars with [ patience <= 0 and xcor > min-pxcor + 3 and xcor < max-pxcor - 3] [choose-new-lane]
+  ;ask cars with [ ycor != target-lane ] [ move-to-target-lane ]
   ;ask cars with [ obstacle = 1 ] [change-to-right-lane]
   tick
 end
@@ -93,7 +93,7 @@ to draw-road
     set label "WEST"
   ]
   create-turtles 1 [
-    setxy (max-pxcor - 15) -5
+    setxy (max-pxcor - 0.5) -5
     set shape "square"
     set color green
     set label "EAST"
@@ -186,7 +186,6 @@ to create-and-remove-cars
       ;if any? cars-here with [ self != this-car ] [die] ; !!!!!!!!!!! must modify this
       if sum [count cars-here] of neighbors > 0 and (any? cars-here with [ self != this-car]) [die]
       set heading 90
-      ;if count cars in-cone 3 0 > 0 and (any? cars-here with [ self != this-car]) [die]
       set facing "east"
       pick-appearance
       init-speed
@@ -260,7 +259,7 @@ to pick-appearance
     ;set shape one-of [ "car" "butterfly" "bee" "bug"]
   ;]
   ;ifelse (shape = "truck") or (shape = "truck-l") [ set size 1 ] [ set size 0.95 ]
-  set size 0.9
+  set size 0.8
   set color one-of [ blue cyan sky 57] + 1.5 + random-float 1.0
   set original-color color
 end
@@ -278,7 +277,7 @@ to move-forward                                    ; ############ MOVE FORWARD #
   ; check for other car
   ;ask patches in-cone (1.5 + speed * 3) 60 with [ y-distance <= 2 ] ; Eliseo: I was trying to visualize the cone of view of the cars, but doesn't work
   ;    [ set pcolor red ]
-  let blocking-objects other turtles in-cone (1 + speed * 3) 60 with [ y-distance <= 2 ]
+  let blocking-objects other turtles in-cone (0.5 + speed * 3) 60 with [ y-distance <= 2 ]
   let blocking-object min-one-of blocking-objects [ distance myself ]
   ifelse blocking-object != nobody [
     ; match the speed of the car ahead of you and then slow
@@ -323,58 +322,30 @@ to choose-new-lane ; turtle proceduren ----------- fine tune this so no change l
   if not empty? other-lanes [
     let min-dist min map [ y -> abs (y - ycor) ] other-lanes
     let closest-lanes filter [ y -> abs (y - ycor) = min-dist ] other-lanes
-    let temp-target-lane one-of closest-lanes
-    if (pxcor > min-pxcor + 2) and (pxcor < max-pxcor - 2) [ ; only do this when not at the edge of the world
-      if (not any? cars-on patch pxcor temp-target-lane) and (not any? cars-on patch (pxcor - 1) temp-target-lane) and (not any? cars-on patch (pxcor + 1) temp-target-lane)   [
-        set target-lane temp-target-lane
-        set patience max-patience
-      ]
-    ]
-    ;set label target-lane
+    set target-lane one-of closest-lanes
+    set patience max-patience
   ]
 end
 
 to move-to-target-lane
   ; swiftly change lane
   let current-heading heading
-  ;if (pxcor > min-pxcor) and (pxcor < max-pxcor) [
-  ;ifelse (target-lane < ycor) and (not any? cars-on patch-at 0 -2)  and (not any? cars-on patch-at 0 -1.2) and (not any? cars-on patch-ahead 1) [
-  ;  set ycor ycor - 0.05
-  ;   ;speed-up
-  ;   forward speed
+  ifelse (target-lane < ycor) and (not any? cars-on patch-at 0 -1) [
+    set ycor ycor - 0.01
+     speed-up
+     forward speed
 
-  ;][
-  ;  ifelse (target-lane > ycor) and (not any? cars-on patch-at 0 2) and (not any? cars-on patch-at 0 1.2) and (not any? cars-on patch-ahead 1) [
-  ;    set ycor ycor + 0.05
-  ;     ;speed-up
-  ;    forward speed
+  ][
+    ifelse (target-lane > ycor) and (not any? cars-on patch-at 0 1) [
+      set ycor ycor + 0.01
+       speed-up
+       forward speed
 
-  ;  ] [
+    ] [
 
-  ;   forward min-speed
-  ;  ]
-  ;]
-  ;]
-  if (pxcor > min-pxcor + 2) and (pxcor < max-pxcor - 2) [ ; only do this when not at the edge of the world
-    if (current-heading = 90) [
-      if (target-lane < ycor) and  (not any? cars-on patch-at 0 -1) and (not any? cars-on patch-ahead 1) [
-          set ycor ycor - 0.025
-      ]
-      if (target-lane > ycor) and (not any? cars-on patch-at 0 1) and (not any? cars-on patch-ahead 1)  [
-          set ycor ycor + 0.025
-      ]
+     forward 0.01
     ]
-    if (current-heading = 270) [
-      if (target-lane < ycor) and (not any? cars-on patch-left-and-ahead 45 1)  and (not any? cars-on patch-at 0 -1) and (not any? cars-on patch-ahead 1) [
-          set ycor ycor - 0.025
-      ]
-      if (target-lane > ycor) and (not any? cars-on patch-right-and-ahead 45 1)  and (not any? cars-on patch-at 0 1) and (not any? cars-on patch-ahead 1) [
-          set ycor ycor + 0.025
-      ]
-    ]
-    forward speed / 2
   ]
-  forward min-speed
 end
 
 ; *************************** buttons ***************
@@ -448,7 +419,7 @@ max-patience
 max-patience
 0
 100
-2.0
+15.0
 1
 1
 NIL
@@ -463,7 +434,7 @@ deceleration
 deceleration
 0.01
 0.1
-0.05
+0.08
 0.01
 1
 NIL
@@ -472,14 +443,14 @@ HORIZONTAL
 SLIDER
 980
 420
-1152
+1119
 453
 acceleration
 acceleration
-0.0001
 0.001
-3.0E-4
-0.0001
+0.01
+0.004
+0.001
 1
 NIL
 HORIZONTAL
@@ -527,7 +498,7 @@ cars-going-east
 cars-going-east
 0
 200
-107.0
+137.0
 1
 1
 NIL
@@ -542,17 +513,17 @@ cars-going-west
 cars-going-west
 0
 100
-25.0
+19.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-1094
-456
-1127
-548
+1087
+458
+1120
+550
 pos
 pos
 -1
@@ -661,10 +632,10 @@ NIL
 0.0
 1.0
 0.0
-140.0
+120.0
 false
 true
-"set-plot-y-range 20  140" "set-plot-x-range (plot-x-max - 500) (plot-x-max + 1)\n"
+"" "set-plot-x-range (plot-x-max - 500) (plot-x-max + 1)\n"
 PENS
 "to East" 1.0 0 -955883 true "" "; Smooth = alpha speed + (1 - alpha ) smooth\nlet alpha 0.5\nlet s mean [speed] of cars with [facing = \"east\"]\nset smooth-avg-east (alpha * s + (1 - alpha ) * smooth-avg-east)\nset speed-east-converted smooth-avg-east * speed-conversion-factor \nplot speed-east-converted"
 "to West" 1.0 0 -11033397 true "" "let alpha 0.5\nlet s mean [speed] of cars with [facing = \"west\"]\nset smooth-avg-west (alpha * s + (1 - alpha ) * smooth-avg-west)\nset speed-west-converted smooth-avg-west * speed-conversion-factor \nplot speed-west-converted"
@@ -697,8 +668,8 @@ MONITOR
 829
 500
 Avg Speed (to East)
-mean [speed] of cars with [facing = \"east\"] * speed-conversion-factor
-0
+mean [speed] of cars with [facing = \"east\"]
+3
 1
 11
 
@@ -708,8 +679,8 @@ MONITOR
 972
 500
 Avg Speed (to West)
-mean [speed] of cars with [facing = \"west\"] * speed-conversion-factor
-0
+mean [speed] of cars with [facing = \"west\"]
+3
 1
 11
 
@@ -722,25 +693,6 @@ RoadBot Simulator
 26
 0.0
 1
-
-PLOT
-1134
-422
-1334
-542
-plot 1
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot max [speed] of cars with [facing = \"east\"]"
-"pen-1" 1.0 0 -7500403 true "" "plot max [speed] of cars with [facing = \"west\"]"
 
 @#$#@#$#@
 ## WHAT IS IT?
