@@ -36,11 +36,15 @@ cars-own [
   facing
 ]
 
+cones-own [
+  speed
+]
+
 to setup
   clear-all
-  set base-speed 0.1
-  set min-speed 0.001
-  set speed-variation 0.2
+  set base-speed 0.06
+  set min-speed 0.002
+  set speed-variation 0.3
   set base-speed-kmh 100
   set speed-conversion-factor base-speed-kmh / base-speed
   set number-of-lanes 4
@@ -60,6 +64,7 @@ to go
   ask cars [
     move-forward
   ]
+
   detect-cone-position
   create-and-remove-cars
   ;ask cars with [ patience <= 0 and xcor > min-pxcor + 2 and xcor < max-pxcor - 2] [choose-new-lane]
@@ -132,6 +137,7 @@ to draw-cones
       set size 0.3
       set heading 180
       set xpos ( xpos + 1 )
+      set speed min-speed / 2
     ]
   ]
 end
@@ -153,11 +159,12 @@ to move-cones ; this is to move cone up or down the line
     let flashing-colors [orange yellow]
     let x ycor * 100 mod 2
     set color item x flashing-colors
-    if (not any? cars-on patch xcor (ycor + 0.5) ) and ( abs ( ycor - mean [ycor] of cones ) < 0.3 ) [
-      forward 0.001
+    ;ifelse ycor < target-divider-line [let safe-distance 0.5][let safe-distance -0.5]
+    if (not any? cars-on patch-ahead 0.5 ) [
+      forward min-speed / 2
     ]
     set cones-are-moving 1
-  ] [
+    ] [
     set color yellow
     set cones-are-moving 0
   ]
@@ -171,39 +178,39 @@ to create-and-remove-cars
   set cars-heading-west cars with [heading = 270]
 
   if count cars-heading-east > cars-going-east [ ; remove excess car(s) heading east, if any
-    let n count cars-heading-east - cars-going-east
-    ;ask n-of n cars-heading-east [ die ]
     ask cars with [ xcor >= max-pxcor ] [ die ]
   ]
   if count cars-heading-west > cars-going-west [ ; remove excess car(s) heading east, if any
-    let n count cars-heading-west - cars-going-west
-    ;ask n-of n  cars-heading-west [ die ]
     ask cars with [ xcor <= min-pxcor ] [ die ]
   ]
   if( count cars-heading-east < cars-going-east + 1)  [ ; create one car heading east, if needed
-    create-cars 1 [
-      setxy min-pxcor one-of lanes-to-east
-      set target-lane pycor
-      let this-car self
-      if sum [count cars-here] of neighbors > 0 and (any? cars-here with [ self != this-car]) [die]
-      set heading 90
-      set facing "east"
-      pick-appearance
-      init-speed
-      ;ask cars with [ xcor >= max-pxcor ] [ die ]
+    let x-pos min-pxcor
+    let y-pos one-of lanes-to-east
+    if (not any? cars-on patch x-pos y-pos) [
+      create-cars 1 [
+        setxy x-pos y-pos
+        set target-lane pycor
+        let this-car self
+        if sum [count cars-here] of neighbors4 > 0 and (any? cars-here with [ self != this-car]) [die]
+        set heading 90
+        set facing "east"
+        pick-appearance
+        init-speed
+      ]
     ]
   ]
   if (count cars-heading-west < cars-going-west + 1)  [ ; create one car heading west, if needed
-    create-cars 1 [
-      setxy max-pxcor one-of lanes-to-west
-      set target-lane pycor
-      let this-car self
-      if sum [count cars-here] of neighbors > 0 and (any? cars-here with [ self != this-car]) [die]
-      set heading 270
-      set facing "west"
-      pick-appearance
-      init-speed
-      ;ask cars with [ xcor <= min-pxcor ] [ die ]
+    let x-pos max-pxcor
+    let y-pos one-of lanes-to-west
+    if (not any? cars-on patch x-pos y-pos) [
+      create-cars 1 [
+        setxy x-pos y-pos
+        set target-lane pycor
+        set heading 270
+        set facing "west"
+        pick-appearance
+        init-speed
+      ]
     ]
   ]
 end
@@ -274,7 +281,7 @@ to move-forward                                    ; ############ MOVE FORWARD #
   ; check for other car
   ;ask patches in-cone (1.5 + speed * 3) 60 with [ y-distance <= 2 ] ; Eliseo: I was trying to visualize the cone of view of the cars, but doesn't work
   ;    [ set pcolor red ]
-  let blocking-objects other turtles in-cone (1 + speed * 5) 70 with [ y-distance <= 2 ]
+  let blocking-objects other turtles in-cone (1 + speed * 5) 60 with [ y-distance <= 2 ]
   let blocking-object min-one-of blocking-objects [ distance myself ]
   ifelse blocking-object != nobody [
     ; match the speed of the car ahead of you and then slow
@@ -292,7 +299,7 @@ to move-forward                                    ; ############ MOVE FORWARD #
     ]
   ] [
     set obstacle 0
-    set patience max-patience
+    ;set patience max-patience
     speed-up
   ]
   forward speed
@@ -300,7 +307,7 @@ end
 
 to slow-down
     set speed (speed - deceleration)
-    if speed < 0 [ set speed min-speed ]
+    if speed <= 0 [ set speed min-speed ]
     set patience patience - 1
     ifelse patience <= 0 [
       ;set color red
@@ -336,6 +343,7 @@ to choose-new-lane ; turtle proceduren ----------- fine tune this so no change l
 end
 
 to change-lane
+  ;set color red
   let blocked-target true
   ifelse heading = 270 [ ;---------- if going West
     let other-lanes remove ycor lanes-to-west
@@ -343,8 +351,7 @@ to change-lane
       let min-dist min map [ y -> abs (y - ycor) ] other-lanes
       let closest-lanes filter [ y -> abs (y - ycor) = min-dist ] other-lanes
       let temp-target-lane one-of closest-lanes
-      if temp-target-lane > ycor and (not any? cars-on patch (xcor - 1) temp-target-lane) and (not any? cars-on patch (xcor) temp-target-lane) [ set blocked-target false ]
-      if temp-target-lane < ycor and (not any? cars-on patch (xcor + 1) temp-target-lane) and (not any? cars-on patch (xcor) temp-target-lane) [ set blocked-target false ]
+      if count cars with [ pxcor < xcor - 0.2 and pxcor > xcor - 2 and pycor = temp-target-lane] = 0 [ set blocked-target false ]
       if (not blocked-target) [
         set target-lane temp-target-lane
         set patience max-patience
@@ -358,8 +365,8 @@ to change-lane
       let min-dist min map [ y -> abs (y - ycor) ] other-lanes
       let closest-lanes filter [ y -> abs (y - ycor) = min-dist ] other-lanes
       let temp-target-lane one-of closest-lanes
-      if temp-target-lane > ycor and (not any? cars-on patch (xcor + 1) temp-target-lane) and (not any? cars-on patch (xcor + 2) temp-target-lane) and (not any? cars-on patch (xcor) temp-target-lane) [ set blocked-target false ]
-      if temp-target-lane < ycor and (not any? cars-on patch (xcor - 1) temp-target-lane) and (not any? cars-on patch (xcor - 2) temp-target-lane) and (not any? cars-on patch (xcor) temp-target-lane) [ set blocked-target false ]
+      let mypycor pycor
+      if count cars with [ pxcor > xcor + 0.2 and pxcor < xcor + 2 and pycor = temp-target-lane] = 0 [ set blocked-target false ]
       if (not blocked-target) [
         set target-lane temp-target-lane
         set patience max-patience
@@ -375,14 +382,14 @@ to move-to-target-lane
   ; swiftly change lane
   let current-heading heading
   ifelse (target-lane < ycor) and (not any? cars-on patch-at 0 -2) and (not any? cars-on patch-ahead 1) [
-    set ycor ycor - 0.02
-     forward speed / 3
+    set ycor ycor - 0.01
+     forward speed / 5
   ][
     ifelse (target-lane > ycor) and (not any? cars-on patch-at 0 2) and (not any? cars-on patch-ahead 1) [
-      set ycor ycor + 0.02
-       forward speed / 3
+      set ycor ycor + 0.01
+       forward speed / 5
     ] [
-     forward 0.001
+     ;forward speed
     ]
   ]
 end
@@ -438,7 +445,7 @@ end
 GRAPHICS-WINDOW
 10
 30
-1634
+1314
 375
 -1
 -1
@@ -452,8 +459,8 @@ GRAPHICS-WINDOW
 0
 0
 1
--50
-50
+-40
+40
 -10
 10
 0
@@ -470,8 +477,8 @@ SLIDER
 max-patience
 max-patience
 0
-100
-2.0
+25
+3.0
 1
 1
 NIL
@@ -486,7 +493,7 @@ deceleration
 deceleration
 0.01
 0.1
-0.04
+0.01
 0.01
 1
 NIL
@@ -501,7 +508,7 @@ acceleration
 acceleration
 0.0001
 0.01
-0.0011
+0.002
 0.0001
 1
 NIL
@@ -550,7 +557,7 @@ cars-going-east
 cars-going-east
 0
 200
-40.0
+150.0
 1
 1
 NIL
@@ -565,7 +572,7 @@ cars-going-west
 cars-going-west
 0
 200
-107.0
+42.0
 1
 1
 NIL
@@ -580,7 +587,7 @@ pos
 pos
 -1
 1
-0.0
+1.0
 1
 1
 NIL
